@@ -15,14 +15,10 @@ public class FollowCamera : MonoBehaviour
     void Start()
     {
         player = GameObject.Find("Player").transform;
-
     }
 
     void Update()
-    {
-       
-
-
+    {   
         if (target != null && player != null)
         {
             // 카메라의 위치를 타겟 트랜스폼의 위치로 지정한다.
@@ -34,8 +30,6 @@ public class FollowCamera : MonoBehaviour
             //{
             //    transform.position = Vector3.Lerp(transform.position, target.position, Time.deltaTime * followSpeed);
             //}
-
-
 
             // 카메라의 정면 방향을 플레이어의 정면 방향으로 설정한다.
             //Vector3 dir = (player.position - transform.position).normalized;
