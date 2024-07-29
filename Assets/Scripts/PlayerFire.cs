@@ -15,6 +15,8 @@ public class PlayerFire : MonoBehaviour
     public float simulationTime = 5.0f;
     public float interval = 0.1f;
     public float mass = 5;
+    public float grenadeRange = 5.0f;
+    public GameObject targetTexture;
 
 
     List<Vector3> trajectory = new List<Vector3>();
@@ -28,6 +30,9 @@ public class PlayerFire : MonoBehaviour
 
         bulletEffect = bulletFXObject.GetComponent<ParticleSystem>();
         line = firePosition.GetComponent<LineRenderer>();
+
+        targetTexture.transform.localScale = new Vector3(grenadeRange, grenadeRange, 1);
+        targetTexture.SetActive(false);
     }
 
     void Update()
@@ -60,6 +65,10 @@ public class PlayerFire : MonoBehaviour
                 //GameObject go = Instantiate(bulletFXObject, hitInfo.point, Quaternion.identity);
 
                 bulletFXObject.transform.position = hitInfo.point;
+
+                // 충돌 지점의 법선 방향으로 이펙트를 회전시킨다.
+                bulletFXObject.transform.forward = hitInfo.normal;
+
                 bulletEffect.Play();
             }
         }
@@ -80,6 +89,8 @@ public class PlayerFire : MonoBehaviour
             Vector3 gravity = Physics.gravity;
             int simulCount = (int)(simulationTime / interval);
 
+
+            Vector3 hitNormal = Vector3.zero;
             trajectory.Clear();
             for(int i = 0; i < simulCount; i++)
             {
@@ -90,17 +101,18 @@ public class PlayerFire : MonoBehaviour
 
                 // 계산된 result 위치와 직전 위치 사이에 충돌할 물체가 있는지 확인한다.
                 // Raycast를 이용
-
                 if (trajectory.Count > 0)
                 {
                     Vector3 rayDir = result - trajectory[trajectory.Count - 1];
                     Ray ray = new Ray(trajectory[trajectory.Count - 1], rayDir.normalized);
                     RaycastHit hitInfo;
+
                     // 만일, 부딪힌 대상이 있다면...
                     if (Physics.Raycast(ray, out hitInfo, rayDir.magnitude))
                     {
                         // 그 지점을 리스트에 추가하고 반복문을 종료한다.
                         trajectory.Add(hitInfo.point);
+                        hitNormal = hitInfo.normal * 0.01f;
                         break;
                     }
                     // 그렇지 않다면...
@@ -123,6 +135,11 @@ public class PlayerFire : MonoBehaviour
             line.endWidth = 0.1f;
             line.startColor = Color.white;
             line.endColor = Color.white;
+
+            // 탄착 지점에 범위 텍스쳐 오브젝트를 배치하고 활성화한다.
+            targetTexture.transform.position = trajectory[trajectory.Count - 1] + hitNormal;
+            targetTexture.transform.forward = hitNormal * -100;
+            targetTexture.SetActive(true);
         }
         // 만일, 마우스의 우측 버튼을 눌렀다가 떼면...
         else if (Input.GetMouseButtonUp(1))
@@ -143,6 +160,8 @@ public class PlayerFire : MonoBehaviour
                 // 물리적으로 발사하기
                 rb.AddForce(dir * throwPower, ForceMode.Impulse);
             }
+
+            targetTexture.SetActive(false);
         }
     }
 
@@ -165,7 +184,4 @@ public class PlayerFire : MonoBehaviour
             Gizmos.DrawLine(trajectory[i], trajectory[i + 1]);
         }
     }
-
-
-
 }

@@ -122,4 +122,11 @@ public class PlayerMove : MonoBehaviour
         transform.eulerAngles = new Vector3(0, rotY, 0);
         Camera.main.transform.GetComponent<FollowCamera>().rotX = rotX;
     }
+
+
+    //private void OnControllerColliderHit(ControllerColliderHit hit)
+    //{
+        
+    //}
+
 }
