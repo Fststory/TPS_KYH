@@ -626,12 +626,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 473b1a36e255f9643a23f72f961d488e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  myState: 1
+  myState: 0
   patrolRadius: 4
   patrolSpeed: 5
   traceSpeed: 9
   attackRange: 2
-  target: {fileID: 1881367608}
+  sightRange: 30
+  sightDistance: 15
+  maxTraceDistance: 25
+  drawGizmos: 1
+  target: {fileID: 0}
 --- !u!143 &912915515
 CharacterController:
   m_ObjectHideFlags: 0
@@ -740,7 +744,7 @@ Transform:
   m_GameObject: {fileID: 912915513}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -7.79, y: 1, z: 7.87}
+  m_LocalPosition: {x: -7.79, y: 1, z: 9.43}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1705,7 +1709,7 @@ GameObject:
   - component: {fileID: 1881367611}
   m_Layer: 7
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

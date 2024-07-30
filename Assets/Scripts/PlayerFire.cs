@@ -18,6 +18,8 @@ public class PlayerFire : MonoBehaviour
     public float grenadeRange = 5.0f;
     public GameObject targetTexture;
 
+    public float attackPower = 20.0f;
+
 
     List<Vector3> trajectory = new List<Vector3>();
     ParticleSystem bulletEffect;
@@ -64,12 +66,24 @@ public class PlayerFire : MonoBehaviour
                 //print(hitInfo.transform.name);
                 //GameObject go = Instantiate(bulletFXObject, hitInfo.point, Quaternion.identity);
 
-                bulletFXObject.transform.position = hitInfo.point;
+                // 만일, 충돌한 대상이 EnemyFSM 컴포넌트를 가지고 있다면...
+                EnemyFSM enemy = hitInfo.transform.GetComponent<EnemyFSM>();
 
-                // 충돌 지점의 법선 방향으로 이펙트를 회전시킨다.
-                bulletFXObject.transform.forward = hitInfo.normal;
+                if (enemy != null)
+                {
+                    // EnemyFSM의 TakeDamage 함수를 실행한다.
+                    enemy.TakeDamage(attackPower, ray.direction, transform);
+                }
+                // 그렇지 않다면...
+                else
+                {
+                    bulletFXObject.transform.position = hitInfo.point;
 
-                bulletEffect.Play();
+                    // 충돌 지점의 법선 방향으로 이펙트를 회전시킨다.
+                    bulletFXObject.transform.forward = hitInfo.normal;
+
+                    bulletEffect.Play();
+                }
             }
         }
     }
