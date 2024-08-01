@@ -3,8 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using UnityEngine.UI;
 
-public class EnemyFSM : MonoBehaviour
+public class EnemyFSM : ActorBase
 {
     public enum EnemyState  // 원본과 변수는 접근한정자가 동일해야 된다. enum EnemyState/ myState
     {
@@ -23,8 +24,8 @@ public class EnemyFSM : MonoBehaviour
 
     [Header("기본 속성")]
     public EnemyIninPreferences initPreferences;
-
-    public float maxHP = 100.0f;
+    public EnemyStateBase myStatus;
+    public Slider hpSlider;
 
 
     float currentTime = 0;
@@ -32,7 +33,6 @@ public class EnemyFSM : MonoBehaviour
     Vector3 patrolCenter;
     CharacterController cc;
     Vector3 patrolNext;
-    float currentHP = 0;
     Vector3 hitDirection;
 
     [SerializeField]
@@ -43,7 +43,9 @@ public class EnemyFSM : MonoBehaviour
         patrolCenter = transform.position;
         patrolNext = patrolCenter;
         cc = GetComponent<CharacterController>();
-        currentHP = maxHP;
+        //myStatus.Initialize(100, 9);
+        //myStatus.patrolSpeed = 5;
+        hpSlider.value = myStatus.currentHP / myStatus.maxHP;
     }
 
     void Update()
@@ -97,34 +99,34 @@ public class EnemyFSM : MonoBehaviour
     {
         CheckSight(initPreferences.sightRange, initPreferences.sightDistance);
 
-
         // 선택된 지점으로 이동한다.
         Vector3 dir = patrolNext - transform.position;
         if (dir.magnitude > 0.1f)
         {
-            cc.Move(dir.normalized * initPreferences.patrolSpeed * Time.deltaTime);
+            cc.Move(dir.normalized * myStatus.patrolSpeed * Time.deltaTime);
         }
         // 목적지에 도달하고, 2초~3초 사이만큼 대기한 다음 다른 지점을 추첨한다.
         else
-        {           
+        {
             // patrolRadius를 반경으로 하는 원의 임의의 지점을 선택한다.
             #region 1. 벡터 기본 연산 방식
             //float h, v;
-            //h = Random.Range(-patrolRadius, patrolRadius);
-            //v = Random.Range(-patrolRadius, patrolRadius);
-            //Vector3 newPos = new Vector3(h, 0, v).normalized * patrolRadius;
+            //h = Random.Range(-1, 1);
+            //v = Random.Range(-1, 1);
+            //float distance = Random.Range(0, initPreferences.patrolRadius);
+            //Vector3 newPos = new Vector3(h, 0, v).normalized * distance;
             //patrolNext = patrolCenter + newPos;
             #endregion
 
             #region 2. Random 클래스에 있는 inside 함수를 이용해서 연산하는 방식
-            Vector2 newPos = Random.insideUnitCircle* initPreferences.patrolRadius;
+            Vector2 newPos = Random.insideUnitCircle * initPreferences.patrolRadius;
             patrolNext = patrolCenter + new Vector3(newPos.x, 0, newPos.y);
             #endregion
 
             #region 3. 삼각 함수를 이용한 계산식
             //float degree = Random.Range(-180.0f, 180.0f);
             //Vector3 newPos = new Vector3(Mathf.Cos(Mathf.Deg2Rad * degree), 0, Mathf.Sin(Mathf.Deg2Rad * degree));
-            //float distance = Random.Range(0, patrolRadius);
+            //float distance = Random.Range(0, initPreferences.patrolRadius);
             //patrolNext = patrolCenter + newPos * distance;
             #endregion
 
@@ -187,7 +189,7 @@ public class EnemyFSM : MonoBehaviour
 
         // 타겟을 향해 추격 이동한다.
         Vector3 dir = target.transform.position - transform.position;
-        cc.Move(dir.normalized * initPreferences.traceSpeed * Time.deltaTime);
+        cc.Move(dir.normalized * myStatus.speed * Time.deltaTime);
 
         // 공격 범위 이내로 들어가면 상태를 Attack 상태로 전환한다.
         if (dir.magnitude < initPreferences.attackRange)
@@ -201,7 +203,7 @@ public class EnemyFSM : MonoBehaviour
     private void Attack()
     {
         // 공격을 한다
-        print("Attack Target!");
+        target.GetComponent<PlayerMove>().TakeDamage(20, Vector3.zero, transform);
 
         // 공격 애니메이션이 끝나면 공격 대기 상태로 전환한다.        
         myState = EnemyState.AttackDelay;
@@ -248,7 +250,7 @@ public class EnemyFSM : MonoBehaviour
         // 그렇지 않았다면...
         else
         {
-            cc.Move(dir.normalized * initPreferences.traceSpeed * Time.deltaTime);
+            cc.Move(dir.normalized * myStatus.speed * Time.deltaTime);
         }
 
     }
@@ -266,18 +268,24 @@ public class EnemyFSM : MonoBehaviour
     }
 
     // 상대방이 나에게 데미지를 부여하는 함수
-    public void TakeDamage(float atkPower, Vector3 hitDir, Transform attacker)
+    public override void TakeDamage(float atkPower, Vector3 hitDir, Transform attacker)
     {
+        // 부모에 구현된 TakeDamage 함수를 먼저 실행한다.
+        base.TakeDamage(atkPower, hitDir, attacker);
+
         if (myState == EnemyState.Dead || myState == EnemyState.Return || myState == EnemyState.Damaged)
         {
             return;
         }
 
         // 1. 현재 체력에 상대의 공격력만큼을 감소시킨다.(min 0 ~ max 100)
-        currentHP = Mathf.Clamp(currentHP - atkPower, 0, maxHP);
+        myStatus.currentHP = Mathf.Clamp(myStatus.currentHP - atkPower, 0, myStatus.maxHP);
+
+        // 1-2. 체력 슬라이더 UI에 현재 체력을 표시한다.
+        hpSlider.value = myStatus.currentHP / myStatus.maxHP;
 
         // 2. 만일, 그 결과 현재 체력이 0 이하라면...
-        if (currentHP <= 0)
+        if (myStatus.currentHP <= 0)
         {
             // 2-1. 나의 상태를 죽음 상태로 전환한다.
             myState = EnemyState.Dead;
@@ -369,8 +377,6 @@ public class EnemyFSM : MonoBehaviour
 public class EnemyIninPreferences
 {
     public float patrolRadius = 4.0f;
-    public float patrolSpeed = 5.0f;
-    public float traceSpeed = 9.0f;
     public float attackRange = 2.0f;
     [Range(0.0f, 90.0f)]
     public float sightRange = 30.0f;
@@ -378,11 +384,9 @@ public class EnemyIninPreferences
     public float maxTraceDistance = 25.0f;
 
     // 생성자 함수 (= 값 초기화 함수, 메모리에 인스턴스를 생성하는 과정에서 값을 넣어줌)
-    public EnemyIninPreferences(float patrolRadius, float patrolSpeed, float traceSpeed, float attackRange, float sightRange, float sightDistance, float maxTraceDistance)
+    public EnemyIninPreferences(float patrolRadius, float attackRange, float sightRange, float sightDistance, float maxTraceDistance)
     {
         this.patrolRadius = patrolRadius;
-        this.patrolSpeed = patrolSpeed;
-        this.traceSpeed = traceSpeed;
         this.attackRange = attackRange;
         this.sightRange = Mathf.Clamp(sightRange, 0, 90.0f);
         this.sightDistance = sightDistance;

@@ -1,20 +1,25 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
-public class PlayerMove : MonoBehaviour
+public class PlayerMove : ActorBase
 {
-    public float moveSpeed = 7.0f;
+    public PlayerStateBase myStatus;
+
     public float rotSpeed = 200.0f;
     public float yVelocity = 2;
     public float jumpPower = 4;
     public int maxJumpCount = 1;
-    int currentJumpCount = 0;
+    public Image img_hitUI;
 
     // 회전 값을 미리 계산하기 위한 회전축(x, y) 변수
     float rotX;
     float rotY;
     float yPos;
+    int currentJumpCount = 0;
+    float currenTime = 0.5f;
+    bool timerStart = false;
 
     CharacterController cc;
 
@@ -40,6 +45,17 @@ public class PlayerMove : MonoBehaviour
     {
         Move();
         Rotate();
+
+        // 히트 UI 타이머
+        //if (timerStart)
+        //{
+        //    currenTime -= Time.deltaTime;
+        //    if (currenTime < 0)
+        //    {
+        //        timerStart = false;
+        //        img_hitUI.gameObject.SetActive(false);
+        //    }
+        //}
     }
 
     // "Horizontal" "Vertical" 입력을 이용해서 수평면으로 이동하게 하고 싶다.
@@ -63,12 +79,12 @@ public class PlayerMove : MonoBehaviour
         dir.Normalize();
 
         // 2. 수직 이동 계산
-                
+
         // 중력 적용
         yPos += gravityPower.y * yVelocity * Time.deltaTime;
 
         // 바닥에 닿아 있을 때에는 yPos의 값을 0으로 초기화한다.
-        if(cc.collisionFlags == CollisionFlags.CollidedBelow)
+        if (cc.collisionFlags == CollisionFlags.CollidedBelow)
         {
             yPos = 0;
             // (바닥에 닿으면) 점프 가능 횟수와 점프 횟수가 초기화 된다.
@@ -90,7 +106,7 @@ public class PlayerMove : MonoBehaviour
 
         // p = p0 + vt;
         //transform.position += dir * moveSpeed * Time.deltaTime;
-        cc.Move(dir * moveSpeed * Time.deltaTime); //중력 미적용 버전
+        cc.Move(dir * myStatus.speed * Time.deltaTime); //중력 미적용 버전
         //cc.SimpleMove(dir * moveSpeed); //중력 적용 버전
         // 둘의 차이는 simplemove는 중력이 적용되면서 이미 시간 계산까지 하고 있기에 매개변수에 속력만 들어가고 move는 속력과 시간의 곱이 들어간다.
     }
@@ -123,10 +139,48 @@ public class PlayerMove : MonoBehaviour
         Camera.main.transform.GetComponent<FollowCamera>().rotX = rotX;
     }
 
+    // 데미지 받았을 때에 실행할 함수
+    public override void TakeDamage(float atkPower, Vector3 hitDir, Transform attacker)
+    {
+        base.TakeDamage(atkPower, hitDir, attacker);
 
-    //private void OnControllerColliderHit(ControllerColliderHit hit)
-    //{
-        
-    //}
+        myStatus.currentHP = Mathf.Clamp(myStatus.currentHP - atkPower, 0, myStatus.maxHP);
+        //print("내 체력: " + myStatus.currentHP);
+
+        // img_hitUI 오브젝트를 활성화했다가, 0.5초 뒤에 다시 비활성화한다.
+        //img_hitUI.gameObject.SetActive(true);
+        //currenTime = 0.5f;
+        //timerStart = true;
+        //Invoke("DeActivateHitUI", 0.5f);
+        StartCoroutine(DeActivateHitUI(0.5f));
+    }
+
+    // 코루틴 함수
+    IEnumerator DeActivateHitUI(float delayTIme)
+    {
+        //float addValue = 0.05f;
+        for (int i = 0; i < 100; i++)
+        {
+            Color colorVector = img_hitUI.color;
+            float addValue = 0.05f;
+            if (i>49)
+            {
+                addValue *= -1;
+            }
+            colorVector.a += addValue;
+            img_hitUI.color = colorVector;
+            //yield return new WaitForSeconds(delayTIme);
+            yield return null;
+        }
+    }
+        //void DeActivateHitUI()
+        //{
+        //    img_hitUI.gameObject.SetActive(false);
+        //}
+
+        //private void OnControllerColliderHit(ControllerColliderHit hit)
+        //{
+
+        //}
 
 }
